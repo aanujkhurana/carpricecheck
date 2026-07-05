@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+/* -------------------------------------------------------------------------
+   Design tokens — light by default, override in `.dark` for dark theme.
+   These are picked up by Tailwind v4 to generate `bg-background`, `text-foreground`
+   and similar utilities automatically.
+   ------------------------------------------------------------------------- */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-border: hsl(214.3 31.8% 91.4%);
+  --color-input: hsl(214.3 31.8% 91.4%);
+  --color-ring: hsl(238 75% 60%);
+
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222.2 47.4% 11.2%);
+
+  --color-primary: hsl(238 75% 60%);
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  --color-secondary: hsl(214 32% 91%);
+  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
+
+  --color-muted: hsl(214 32% 91%);
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+
+  --color-accent: hsl(214 32% 91%);
+  --color-accent-foreground: hsl(222.2 47.4% 11.2%);
+
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222.2 47.4% 11.2%);
+
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222.2 47.4% 11.2%);
+
+  --color-destructive: hsl(0 72% 51%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-soft: 0 4px 30px -12px hsl(238 75% 60% / 0.18);
+}
+
+.dark {
+  --color-border: hsl(217 33% 17%);
+  --color-input: hsl(217 33% 17%);
+  --color-ring: hsl(238 75% 66%);
+
+  --color-background: hsl(225 24% 6%);
+  --color-foreground: hsl(210 40% 98%);
+
+  --color-primary: hsl(238 90% 70%);
+  --color-primary-foreground: hsl(225 25% 8%);
+
+  --color-secondary: hsl(217 33% 14%);
+  --color-secondary-foreground: hsl(210 40% 98%);
+
+  --color-muted: hsl(217 33% 14%);
+  --color-muted-foreground: hsl(215 20% 70%);
+
+  --color-accent: hsl(217 33% 14%);
+  --color-accent-foreground: hsl(210 40% 98%);
+
+  --color-popover: hsl(225 24% 8%);
+  --color-popover-foreground: hsl(210 40% 98%);
+
+  --color-card: hsl(225 24% 8%);
+  --color-card-foreground: hsl(210 40% 98%);
+
+  --color-destructive: hsl(0 70% 55%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+
+  --shadow-soft: 0 6px 40px -12px hsl(238 90% 70% / 0.30);
+}
+
+/* -------------------------------------------------------------------------
+   Base resets
+   ------------------------------------------------------------------------- */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background-color: hsl(238 75% 60% / 0.25);
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Utility patterns used throughout the marketing pages
+   ------------------------------------------------------------------------- */
+
+@layer utilities {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-narrow {
+    @apply mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .glass {
+    background: linear-gradient(
+      180deg,
+      hsl(0 0% 100% / 0.65),
+      hsl(0 0% 100% / 0.35)
+    );
+    backdrop-filter: blur(14px) saturate(150%);
+    border: 1px solid hsl(0 0% 100% / 0.4);
+  }
+
+  .dark .glass {
+    background: linear-gradient(
+      180deg,
+      hsl(225 24% 8% / 0.65),
+      hsl(225 24% 8% / 0.4)
+    );
+    border: 1px solid hsl(225 24% 8% / 0.75);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.45s ease-out both;
+  }
+
+  .bg-mesh {
+    background:
+      radial-gradient(at 30% 20%, hsl(238 75% 60% / 0.15), transparent 50%),
+      radial-gradient(at 80% 60%, hsl(280 80% 60% / 0.12), transparent 50%),
+      radial-gradient(at 50% 90%, hsl(200 80% 60% / 0.10), transparent 50%);
+  }
+
+  .dark .bg-mesh {
+    background:
+      radial-gradient(at 30% 20%, hsl(238 90% 70% / 0.20), transparent 50%),
+      radial-gradient(at 80% 60%, hsl(280 90% 70% / 0.18), transparent 50%),
+      radial-gradient(at 50% 90%, hsl(200 90% 70% / 0.15), transparent 50%);
+  }
+}

@@ -1,0 +1,156 @@
+// CarCostCheck - Prisma schema
+// Datasource is Postgres (Phase 3+). All models are designed to be portable
+// to Postgres with no field-type changes — String stays String, Int stays
+// Int, JSON blobs are stored as String.
+//
+// Engine type has been dropped (Phase 1's `engineType = "library"` paired
+// with a SQLite dev DB is no longer needed now that Postgres is the runtime
+// target). Prisma 7's default "client" engine takes over; it talks to a
+// postgres:// URL through the native Prisma client without any driver
+// adapter (the previous @prisma/adapter-libsql wiring has been removed in
+// src/lib/db.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URL is configured in prisma.config.ts (Prisma 7+)
+}
+
+// ---------------------------------------------------------------------------
+// Reports
+// ---------------------------------------------------------------------------
+model Report {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // The full report payload, normalised into the JSON shape produced by the AI
+  // provider. Keeping it as a JSON blob lets the AI output evolve without DB
+  // migrations in the MVP.
+  reportJson String // JSON-encoded ReportPayload
+
+  // Denormalised, indexed fields used for SEO pages and analytics
+  make       String
+  model      String
+  year       Int
+  variant    String?
+  state      String?
+  askingPrice Int
+  dealRating String // GREAT_DEAL | FAIR_PRICE | OVERPRICED
+  verdict    String // BUY | NEGOTIATE | AVOID
+  fairValueLow  Int
+  fairValueHigh Int
+
+  // Source
+  sourceUrl   String?
+  sourceDomain String?
+  isPublic    Boolean  @default(true) // false = private/anonymous-only report
+
+  // View count for popularity tracking
+  viewCount Int @default(0)
+
+  // Postgres RLS note: Supabase RLS policies on public.Profile and
+  // public.Report (see `prisma/migrations/0002_supabase_rls_policies.sql`)
+  // enforce ownership at the DB layer for callers running as the
+  // `authenticated` Supabase role — the Supabase JS client. Prisma connects
+  // as the `postgres` role (BYPASSRLS=true) and ignores those policies;
+  // application-level ownership guards stay in place here.
+
+  // Optional owner (Supabase auth.users.id). Reports created before auth
+  // shipped keep userId null and remain public via the existing `isPublic`
+  // flag. onDelete: SetNull preserves historical reports when a user
+  // deletes their account — keeps aggregate SEO + market analytics intact.
+  userId String? @db.Uuid
+  user   Profile? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
+  vehicleId String? @unique
+
+  @@index([make, model, year])
+  @@index([createdAt])
+  @@index([dealRating])
+  @@index([userId])
+}
+
+model Vehicle {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Required
+  make   String
+  model  String
+  year   Int
+
+  // Optional details
+  variant     String?
+  odometer    Int? // km
+  transmission String? // auto | manual | cvt | dct
+  fuelType    String? // petrol | diesel | hybrid | plug-in-hybrid | electric | lpg
+  driveType   String? // fwd | rwd | awd | 4wd
+  vin         String?
+  askingPrice Int
+  sellerType  String? // private | dealer | authorized-dealer
+  state       String? // NSW | VIC | QLD | WA | SA | TAS | ACT | NT
+  description String?
+  imageUrl    String?
+
+  report Report?
+
+  @@unique([vin])
+  @@index([make, model])
+}
+
+// ---------------------------------------------------------------------------
+// Profiles — mirror of Supabase Auth's `auth.users` table. The `id` matches
+// auth.users.id so the FK is a 1:1 PK mirror (canonical Supabase pattern,
+// avoids the need for a separate userId column). See
+// `prisma/migrations/0001_supabase_auth_setup.sql` for the FK + AFTER INSERT
+// trigger that auto-creates a Profile row on each new auth.users row.
+// ---------------------------------------------------------------------------
+model Profile {
+  id          String   @id @db.Uuid
+  displayName String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reports Report[]
+
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Listing URL → cached scraped metadata. Phase 2 will populate; Phase 1 seeds
+// an empty table so the cache primitive is in place.
+// ---------------------------------------------------------------------------
+model ScrapeCache {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  domain    String
+  payload   String   // JSON-encoded scraped payload
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+// ---------------------------------------------------------------------------
+// Lightweight analytics — Phase 3 dashboard will read these.
+// ---------------------------------------------------------------------------
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  event   String // page_view | report_created | report_shared | etc
+  path    String?
+  referer String?
+  country String?
+  reportId String?
+
+  @@index([event])
+  @@index([createdAt])
+}

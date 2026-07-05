@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="55%" stop-color="#4338ca"/>
+      <stop offset="100%" stop-color="#a21caf"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="0.2" cy="0.2" r="0.6">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.8" cy="0.8" r="0.5">
+      <stop offset="0%" stop-color="#f0abfc" stop-opacity="0.40"/>
+      <stop offset="100%" stop-color="#f0abfc" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow1)"/>
+  <rect width="1200" height="630" fill="url(#glow2)"/>
+
+  <g font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" fill="#ffffff">
+    <g transform="translate(72, 96)">
+      <rect width="64" height="64" rx="14" fill="rgba(255,255,255,0.16)"/>
+      <text x="32" y="44" font-size="34" font-weight="800" text-anchor="middle" fill="#fff">C</text>
+      <text x="92" y="44" font-size="32" font-weight="700">CarCostCheck.ai</text>
+    </g>
+
+    <text x="72" y="320" font-size="74" font-weight="800">Is this car actually</text>
+    <text x="72" y="396" font-size="74" font-weight="800">worth it?</text>
+
+    <text x="72" y="464" font-size="30" font-weight="500" fill="rgba(255,255,255,0.92)">
+      AI-built buying reports for Australian used cars.
+    </text>
+    <text x="72" y="504" font-size="30" font-weight="500" fill="rgba(255,255,255,0.92)">
+      Fair value · running costs · reliability · negotiation script.
+    </text>
+
+    <rect x="72" y="544" width="240" height="48" rx="12" fill="#ffffff"/>
+    <text x="192" y="576" font-size="22" font-weight="700" text-anchor="middle" fill="#4338ca">Check a car →</text>
+  </g>
+</svg>
