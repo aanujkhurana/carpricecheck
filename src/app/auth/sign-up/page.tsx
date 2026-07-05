@@ -4,11 +4,11 @@ import { SiteHeader } from "@/components/landing/site-header";
 import { SiteFooter } from "@/components/landing/site-footer";
 
 interface PageProps {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }
 
 export default async function SignUpPage({ searchParams }: PageProps) {
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
   return (
     <>
       <SiteHeader />
@@ -32,6 +32,9 @@ export default async function SignUpPage({ searchParams }: PageProps) {
           )}
 
           <form action={signUp} className="mt-6 space-y-4">
+            {next && next.startsWith("/") && !next.startsWith("//") && (
+              <input type="hidden" name="next" value={next} />
+            )}
             <label className="block">
               <span className="text-sm font-medium">Email</span>
               <input

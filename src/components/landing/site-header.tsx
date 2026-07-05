@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Car, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { AuthNav } from "@/components/landing/auth-nav";
 
 export function SiteHeader() {
   return (
@@ -20,6 +21,7 @@ export function SiteHeader() {
           <Link href="/#faq" className="transition-colors hover:text-foreground">FAQ</Link>
         </nav>
         <div className="flex items-center gap-2">
+          <AuthNav />
           <ThemeToggle />
           <Button asChild size="sm" variant="gradient">
             <Link href="/check">

@@ -20,6 +20,9 @@ import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { ReportSections } from "@/components/report/report-sections";
 import { ReportShareCard } from "@/components/report/share-card";
+import { createClient } from "@/lib/supabase/server";
+import { VisibilityToggle } from "@/components/my-reports/visibility-toggle";
+import { DeleteReportButton } from "@/components/my-reports/delete-report-button";
 
 // /report/[slug] is auto-detected as dynamic: `noStore()` in both
 // `generateMetadata` and `ReportPage` is an early bailout that opts the route
@@ -73,7 +76,26 @@ export default async function ReportPage({ params }: PageProps) {
   noStore();
   const { slug } = await params;
   const report = await prisma.report.findUnique({ where: { slug } });
-  if (!report || !report.isPublic) notFound();
+  if (!report) notFound();
+
+  // Owner check: signed-in user with a matching userId on the row sees their
+  // own private report. Non-owners are 404'd on private reports.
+  let isOwner = false;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    if (
+      data.user &&
+      report.userId &&
+      data.user.id === report.userId
+    ) {
+      isOwner = true;
+    }
+  } catch {
+    isOwner = false;
+  }
+
+  if (!report.isPublic && !isOwner) notFound();
 
   const payload = safeJsonParse<ReportPayload>(report.reportJson);
   if (!payload) notFound();
@@ -110,6 +132,8 @@ export default async function ReportPage({ params }: PageProps) {
 
         <SummaryBar input={input} report={report} payload={payload} />
 
+        {isOwner && <OwnerControls report={{ id: report.id, isPublic: report.isPublic }} />}
+
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           <ReportSections payload={payload} />
           <aside className="lg:sticky lg:top-20 lg:self-start">
@@ -130,6 +154,31 @@ export default async function ReportPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(reportFaqJsonLd(payload)) }}
       />
     </>
+  );
+}
+
+function OwnerControls({
+  report,
+}: {
+  report: { id: string; isPublic: boolean };
+}) {
+  return (
+    <div className="mt-6 overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-500/5">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+            Owner controls
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Only you can see this section.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <VisibilityToggle id={report.id} isPublic={report.isPublic} />
+          <DeleteReportButton id={report.id} />
+        </div>
+      </div>
+    </div>
   );
 }
 

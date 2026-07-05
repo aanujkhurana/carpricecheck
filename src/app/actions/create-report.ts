@@ -4,6 +4,7 @@
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
 import { VehicleInputSchema, type VehicleInput } from "@/lib/schemas";
 import { ai } from "@/lib/ai/provider";
 import { prisma } from "@/lib/db";
@@ -21,6 +22,19 @@ export async function createReportAction(
   _prev: CreateReportState | null,
   formData: FormData,
 ): Promise<CreateReportState> {
+  // ----- Optional owner attribution -----
+  // We don't gate the action on auth (anonymous flow stays intact); we only
+  // attach `userId` if a Supabase session is present. Wrapped in try/catch
+  // so a missing Supabase env doesn't break anonymous report creation.
+  let ownerUserId: string | null = null;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    if (data.user) ownerUserId = data.user.id;
+  } catch {
+    ownerUserId = null;
+  }
+
   // ----- Rate limit -----
   const reqHeaders = await headers();
   let ip =
@@ -54,13 +68,17 @@ export async function createReportAction(
 
   const input: VehicleInput = parsed.data;
 
-  // ----- De-dupe by sourceUrl -----
+  // ----- De-dupe by sourceUrl (per-owner) -----
+  // Scoped to the caller's userId so two users re-listing the same listing
+  // each get their own report. For anonymous flows, ownerUserId is null and
+  // Prisma's `where: { userId: null }` matches existing anonymous rows.
   if (input.sourceUrl) {
     const existing = await prisma.report.findFirst({
       where: {
         sourceUrl: input.sourceUrl,
         askingPrice: input.askingPrice,
         year: input.year,
+        userId: ownerUserId,
       },
     });
     if (existing) return { ok: true, slug: existing.slug };
@@ -113,7 +131,7 @@ export async function createReportAction(
           imageUrl: input.imageUrl ?? null,
         },
       });
-      await tx.report.create({
+      const report = await tx.report.create({
         data: {
           slug,
           reportJson: JSON.stringify(payload),
@@ -133,6 +151,20 @@ export async function createReportAction(
           vehicleId: vehicle.id,
         },
       });
+      if (ownerUserId !== null) {
+        // ⚠ Prisma 7 typing workaround — DO NOT copy this pattern into
+        // other create paths until Prisma 8 ships typed
+        // ReportUncheckedCreateInput for nullable Profile? relations.
+        // The relation connect syntax `user: { connect: { id } }` IS
+        // writable, but the inferred
+        // `Without<ReportCreateInput, ReportUncheckedCreateInput> &
+        // ReportUncheckedCreateInput` type rejects both `user` and
+        // `userId`. We bypass with a parameterized `$executeRaw` cast:
+        // `${ownerUserId}::uuid` narrows to the @db.Uuid column type;
+        // SQL injection is impossible because parameters are bound
+        // server-side, never concatenated into the query string.
+        await tx.$executeRaw`UPDATE "Report" SET "userId" = ${ownerUserId}::uuid WHERE "id" = ${report.id}`;
+      }
     });
   } catch (err) {
     console.error("[createReportAction] Persist failed:", err);
